@@ -30,6 +30,12 @@ class IQChartView(QChartView):
         self.mouse_pressed_signal.emit(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """
+        Need to call super() before my own signal.
+        Otherwise the parent will emit a signal to a potentially deleted entity and the application crashes.
+        :param event:
+        :return:
+        """
         super().mouseReleaseEvent(event)
         self.mouse_released_signal.emit(event)
 

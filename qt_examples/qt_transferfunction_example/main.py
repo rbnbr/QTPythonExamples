@@ -7,7 +7,7 @@ from qt_widgets.transferfunction_widget import TransferFunctionWidget
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    widget = TransferFunctionWidget()
+    widget = TransferFunctionWidget("linear")
     window = QMainWindow()
     window.setCentralWidget(widget)
 
