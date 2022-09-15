@@ -71,14 +71,61 @@ class InteractiveChartWidget(IQChartView):
         # at any time, if this is != -1, then the current execution of chart events was induced by this point idx
         self.point_was_pressed_idx = -1
 
-    def find_point_idx(self, point: QPoint):
+    def find_point_idx(self, point: QPoint, series=None):
         idx = -1
 
-        for i in range(self.scatterseries.count()):
-            if self.scatterseries.at(i) == point:
+        if series is None:
+            series = self.scatterseries
+
+        for i in range(series.count()):
+            if series.at(i) == point:
                 idx = i
                 break
         return idx
+
+    def sorted_insert(self, point, series=None):
+        """
+        Insert the point into series, s.t., the series stays sorted.
+        If two points are the same, insert left of it.
+        :param series: A sorted series.
+        :param point:
+        :return:
+        """
+        if series is None:
+            series = self.scatterseries
+
+        for i in range(series.count()):
+            if series.at(i).x() >= point.x():
+                series.insert(i, point)
+                return
+
+        series.append(point)
+
+    def sorted_replace(self, idx_to_replace, new_point: QPoint, series=None):
+        """
+        Replace point of idx_to_replace with new_point but keeps ordering in series.
+        :param series:
+        :param idx_to_replace:
+        :param new_point:
+        :return: Returns the new idx of the added point
+        """
+        if series is None:
+            series = self.scatterseries
+
+        # check if order changes
+        if idx_to_replace < series.count() - 1 and new_point.x() > series.at(idx_to_replace + 1).x():
+            # swap index with next one
+            series.replace(idx_to_replace, series.at(idx_to_replace+1))
+            series.replace(idx_to_replace + 1, new_point)
+            return idx_to_replace + 1
+        if idx_to_replace > 0 and new_point.x() < series.at(idx_to_replace - 1).x():
+            series.replace(idx_to_replace, series.at(idx_to_replace-1))
+            series.replace(idx_to_replace-1, new_point)
+            return idx_to_replace-1
+
+        # no order changes necessary
+        series.replace(idx_to_replace, new_point)
+        return idx_to_replace
 
     @Slot()
     def chart_moved(self, event: QMouseEvent):
@@ -94,7 +141,8 @@ class InteractiveChartWidget(IQChartView):
 
             # self.replace_point_signal.emit(self.point_is_pressed_idx, value)
             # self.scatterseries.append(value)
-            self.scatterseries.replace(self.point_is_pressed_idx, value)
+            self.point_is_pressed_idx = self.sorted_replace(self.point_is_pressed_idx, value)
+            self.point_was_pressed_idx = self.point_is_pressed_idx
         else:
             self.point_is_pressed_idx = -1
 
@@ -104,7 +152,7 @@ class InteractiveChartWidget(IQChartView):
         # add point at position (if click was not induced by point click)
         if self.point_was_pressed_idx == -1 and event.button() == Qt.LeftButton:
             value = self.chart().mapToValue(event.localPos())
-            self.scatterseries.append(value)
+            self.sorted_insert(value)
             printd("added point", value, "\n")
         elif self.point_was_pressed_idx != -1 and event.button() == Qt.LeftButton:
             # remove point

@@ -1,9 +1,15 @@
+from PySide6.QtCharts import QLineSeries
 from PySide6.QtCore import Slot, QMargins, Qt, QMutex
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget
 from typing import Union
 
 from qt_widgets.interactive_chart import InteractiveChartWidget
+
+
+def printd(*args, **kwargs):
+    if not True:
+        print(*args, **kwargs)
 
 
 class Interpolation:
@@ -25,7 +31,18 @@ class TransferFunctionWidget(InteractiveChartWidget):
         if str(interpolation_mode) == str(InterpolationModes.LINEAR):
             self.interpolation_mode = str(interpolation_mode)
         else:
-            self.interpolation_mode = "linear"
+            self.interpolation_mode = InterpolationModes.LINEAR.mode
+
+        # remove scatter series first to plot it above the others later
+        self.chart().removeSeries(self.scatterseries)
+
+        self.line_series = None
+
+        if self.interpolation_mode == InterpolationModes.LINEAR.mode:
+            self.line_series = QLineSeries()
+            self.chart().addSeries(self.line_series)
+            self.line_series.attachAxis(self.axis_x)
+            self.line_series.attachAxis(self.axis_y)
 
         # set x-axis
         self.axis_x.setTickCount(2)
@@ -50,13 +67,34 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.scatterseries.setMarkerSize(2**3.5)
         self.scatterseries.setBorderColor(Qt.transparent)
 
+        # connect signal to slots
+        self.scatterseries.pointAdded.connect(self.point_added)
+        self.scatterseries.pointRemoved.connect(self.point_removed)
+        self.scatterseries.pointReplaced.connect(self.point_replaced)
+
         # set default points (they are not deletable)
         self.scatterseries.append(self.axis_x.min(), self.axis_y.min())
-        self.left_point_idx = 0
         self.scatterseries.append(self.axis_x.max(), self.axis_y.max())
-        self.right_point_idx = 1
 
-        # TODO: handle interpolation mode
+        self.chart().addSeries(self.scatterseries)
+
+    @Slot(int)
+    def point_added(self, idx: int):
+        if self.interpolation_mode == InterpolationModes.LINEAR.mode:
+            self.line_series.insert(idx, self.scatterseries.at(idx))
+        printd("point_added")
+
+    @Slot(int)
+    def point_removed(self, idx: int):
+        if self.interpolation_mode == InterpolationModes.LINEAR.mode:
+            self.line_series.remove(idx)
+        printd("point_removed")
+
+    @Slot(int)
+    def point_replaced(self, idx: int):
+        if self.interpolation_mode == InterpolationModes.LINEAR.mode:
+            self.line_series.replace(idx, self.scatterseries.at(idx))
+        printd("point_replaced")
 
     @Slot()
     def chart_clicked(self, event: QMouseEvent):
@@ -66,7 +104,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :param event:
         :return:
         """
-        if event.button().LeftButton and self.point_was_pressed_idx == self.left_point_idx or self.point_was_pressed_idx == self.right_point_idx:
+        if event.button().LeftButton and self.point_was_pressed_idx == 0 or \
+                self.point_was_pressed_idx == self.scatterseries.count() - 1:
             return
 
         value = self.chart().mapToValue(event.localPos())
@@ -90,7 +129,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
                 value.y() < self.axis_y.min() or value.y() > self.axis_y.max():
             pass
         else:
-            if self.point_is_pressed_idx == self.left_point_idx or self.point_is_pressed_idx == self.right_point_idx:
+            if self.point_is_pressed_idx == 0 or self.point_is_pressed_idx == self.scatterseries.count() - 1:
                 value.setX(self.scatterseries.at(self.point_is_pressed_idx).x())
                 if event.buttons() == Qt.LeftButton:
                     self.scatterseries.replace(self.point_is_pressed_idx, value)
