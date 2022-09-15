@@ -71,6 +71,80 @@ class InteractiveChartWidget(IQChartView):
         # at any time, if this is != -1, then the current execution of chart events was induced by this point idx
         self.point_was_pressed_idx = -1
 
+        # a scatter series that keeps track of the ids of individual points (their y-values)
+        self.point_id_series = QScatterSeries()
+        self.next_point_id = 0
+
+        self.scatterseries.pointAdded.connect(self.id_series_added)
+        self.scatterseries.pointReplaced.connect(self.id_series_replaced)
+        self.scatterseries.pointRemoved.connect(self.id_series_removed)
+
+        self.points_id_configuration = {}
+
+    def get_id_of_point_idx(self, idx: int):
+        """
+        Returns the id of the point idx.
+        :param idx:
+        :return:
+        """
+        return self.point_id_series.at(idx).y()
+
+    def set_id_configuration_for_point_at_idx(self, idx: int, conf: dict):
+        """
+        Sets the configuration for the point at idx based on its id.
+        :param conf:
+        :param idx:
+        :return:
+        """
+        self.points_id_configuration[self.get_id_of_point_idx(idx)] = conf
+        self.update_points_configuration()
+
+    def update_points_configuration(self):
+        """
+        Updates the configuration of scatterseries with the current points_id_configuration.
+        :return:
+        """
+        conf = {}
+        for i in range(self.point_id_series.count()):
+            conf.update({
+                i: self.points_id_configuration[self.point_id_series.at(i).y()]
+                if self.point_id_series.at(i).y() in self.points_id_configuration else dict()
+            })
+
+        self.scatterseries.setPointsConfiguration(conf)
+
+    def get_points_id_configuration(self):
+        """
+        Returns the current points_id_configuration for all point of scatterseries.
+        The id's are the point's id's from point_id_series.
+        :return:
+        """
+        return self.points_id_configuration
+
+    def set_points_id_configuration(self, conf):
+        self.points_id_configuration = conf
+        self.update_points_configuration()
+
+    @Slot(int)
+    def id_series_added(self, idx: int):
+        p = self.scatterseries.at(idx)
+        p.setY(self.next_point_id)
+
+        self.point_id_series.insert(idx, p)
+
+        self.next_point_id += 1
+        self.update_points_configuration()
+
+    @Slot(int)
+    def id_series_removed(self, idx: int):
+        self.point_id_series.remove(idx)
+        self.update_points_configuration()
+
+    @Slot(int)
+    def id_series_replaced(self, idx: int):
+        self.point_id_series.replace(idx, self.point_id_series.at(idx))
+        self.update_points_configuration()
+
     def find_point_idx(self, point: QPoint, series=None):
         idx = -1
 

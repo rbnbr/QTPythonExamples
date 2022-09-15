@@ -1,5 +1,5 @@
-from PySide6.QtCharts import QLineSeries
-from PySide6.QtCore import Slot, QMargins, Qt, QMutex
+from PySide6.QtCharts import QLineSeries, QXYSeries
+from PySide6.QtCore import Slot, QMargins, Qt
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget
 from typing import Union
@@ -78,10 +78,16 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         self.chart().addSeries(self.scatterseries)
 
+        # points configuration
+        self.pointsConfiguration = self.scatterseries.pointsConfiguration()
+
     @Slot(int)
     def point_added(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.insert(idx, self.scatterseries.at(idx))
+
+        self.set_id_configuration_for_point_at_idx(idx, {QXYSeries.PointConfiguration.Color: QColor(Qt.black)})
+
         printd("point_added")
 
     @Slot(int)
