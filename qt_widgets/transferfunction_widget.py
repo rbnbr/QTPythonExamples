@@ -1,10 +1,11 @@
-from PySide6.QtCharts import QLineSeries, QXYSeries
-from PySide6.QtCore import Slot, QMargins, Qt
+from PySide6.QtCharts import QXYSeries
+from PySide6.QtCore import Slot, QMargins, Qt, QPoint
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget
 from typing import Union
 
 from qt_widgets.interactive_chart import InteractiveChartWidget
+from qt_objects.configurable_line_series import ConfigurableLineSeries
 
 
 def printd(*args, **kwargs):
@@ -39,7 +40,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.line_series = None
 
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
-            self.line_series = QLineSeries()
+            self.line_series = ConfigurableLineSeries()
             self.chart().addSeries(self.line_series)
             self.line_series.attachAxis(self.axis_x)
             self.line_series.attachAxis(self.axis_y)
@@ -75,20 +76,28 @@ class TransferFunctionWidget(InteractiveChartWidget):
         # set default points (they are not deletable)
         self.scatterseries.append(self.axis_x.min(), self.axis_y.min())
         self.scatterseries.append(self.axis_x.max(), self.axis_y.max())
-        # self.set_id_configuration_for_point_at_idx(0, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
-        # self.set_id_configuration_for_point_at_idx(1, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
+        # self.scatterseries.setPointConfiguration(0, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
+        # self.scatterseries.setPointConfiguration(1, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
 
         self.chart().addSeries(self.scatterseries)
 
-        # points configuration
-        self.pointsConfiguration = self.scatterseries.pointsConfiguration()
+        # color selector
+        self.scatterseries.clicked.connect(self.open_color_picker)
+
+    @Slot()
+    def open_color_picker(self, point: QPoint):
+        """
+        Opens the color picker for this point to change its color.
+        :param point:
+        :return:
+        """
 
     @Slot(int)
     def point_added(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.insert(idx, self.scatterseries.at(idx))
 
-        self.set_id_configuration_for_point_at_idx(idx, {QXYSeries.PointConfiguration.Color: QColor(Qt.black)})
+        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color: QColor(Qt.black)})
 
         printd("point_added")
 
