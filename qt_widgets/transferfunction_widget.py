@@ -75,6 +75,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
         # set default points (they are not deletable)
         self.scatterseries.append(self.axis_x.min(), self.axis_y.min())
         self.scatterseries.append(self.axis_x.max(), self.axis_y.max())
+        # self.set_id_configuration_for_point_at_idx(0, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
+        # self.set_id_configuration_for_point_at_idx(1, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
 
         self.chart().addSeries(self.scatterseries)
 

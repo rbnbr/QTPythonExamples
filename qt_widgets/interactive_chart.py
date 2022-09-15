@@ -142,8 +142,10 @@ class InteractiveChartWidget(IQChartView):
 
     @Slot(int)
     def id_series_replaced(self, idx: int):
-        self.point_id_series.replace(idx, self.point_id_series.at(idx))
-        self.update_points_configuration()
+        # don't need to do this since replacing does not change id
+        #self.point_id_series.replace(idx, self.point_id_series.at(idx))
+        #self.update_points_configuration()
+        pass
 
     def find_point_idx(self, point: QPoint, series=None):
         idx = -1
