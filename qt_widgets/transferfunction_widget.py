@@ -1,9 +1,10 @@
 from PySide6.QtCharts import QXYSeries
 from PySide6.QtCore import Slot, QMargins, Qt, QPoint
 from PySide6.QtGui import QMouseEvent, QColor
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QColorDialog
 from typing import Union
 
+from qt_utility.interpolation import interpolate_colors
 from qt_widgets.interactive_chart import InteractiveChartWidget
 from qt_objects.configurable_line_series import ConfigurableLineSeries
 
@@ -82,15 +83,57 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.chart().addSeries(self.scatterseries)
 
         # color selector
-        self.scatterseries.clicked.connect(self.open_color_picker)
+        self.mouse_clicked_signal.connect(self.open_color_picker)
+
+    def get_current_color_for(self, x):
+        """
+        Returns the current color for x based on the transfer function.
+        :param x:
+        :return:
+        """
+        left, right = 0, self.scatterseries.count() - 1
+        if x <= self.axis_x.min():
+            return self.scatterseries.get_configuration_for_point_at_idx(left)
+        if x >= self.axis_x.max():
+            return self.scatterseries.get_configuration_for_point_at_idx(right)
+
+        # get left and right of x
+        for i in range(0, self.scatterseries.count()):
+            if self.scatterseries.at(i).x() >= x:
+                left, right = (i - 1), i
+                break
+
+        left_color = self.scatterseries.get_configuration_for_point_at_idx(left)[QXYSeries.PointConfiguration.Color]
+        right_color = self.scatterseries.get_configuration_for_point_at_idx(right)[QXYSeries.PointConfiguration.Color]
+
+
+        # TODO: other interpolation methods
+        printd(left, right)
+        l = self.scatterseries.at(right).x() - self.scatterseries.at(left).x()
+        t = (x - self.scatterseries.at(left).x()) / l
+
+        return interpolate_colors(left_color, right_color, t)
 
     @Slot()
-    def open_color_picker(self, point: QPoint):
+    def open_color_picker(self, event: QMouseEvent):
         """
-        Opens the color picker for this point to change its color.
+        Opens the color picker for the currently clicked point to change its color.
         :param point:
         :return:
         """
+        if self.point_was_pressed_idx == -1:
+            return
+
+        if event.button() == Qt.RightButton:
+            color_picker = QColorDialog(self)
+
+            color_picker.colorSelected.connect(
+                lambda c: self.scatterseries.setPointConfiguration(
+                    self.point_was_pressed_idx, {QXYSeries.PointConfiguration.Color: c}))
+
+            color_picker.show()
+
+        printd(self.get_current_color_for(155))
 
     @Slot(int)
     def point_added(self, idx: int):

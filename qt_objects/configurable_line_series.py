@@ -107,7 +107,7 @@ class ConfigurableLineSeries(QLineSeries):
     @Slot(int)
     def id_series_replaced(self, idx: int):
         # replacing does not change id, we only change values here.
-        # self.point_id_series.replace(idx, self.point_id_series.at(idx))
+        # self._point_id_series.replace(idx, self._point_id_series.at(idx))
         # self.update_points_configuration()
         pass
 

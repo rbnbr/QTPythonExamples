@@ -117,10 +117,20 @@ class InteractiveChartWidget(IQChartView):
             # swap index with next one
             series.replace(idx_to_replace, series.at(idx_to_replace+1))
             series.replace(idx_to_replace + 1, new_point)
+
+            # do this for id as well
+            old_config = series._point_id_series.at(idx_to_replace)
+            series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace + 1))
+            series._point_id_series.replace(idx_to_replace + 1, old_config)
             return idx_to_replace + 1
         if idx_to_replace > 0 and new_point.x() < series.at(idx_to_replace - 1).x():
             series.replace(idx_to_replace, series.at(idx_to_replace-1))
             series.replace(idx_to_replace-1, new_point)
+
+            # do this for id as well
+            old_config = series._point_id_series.at(idx_to_replace)
+            series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace - 1))
+            series._point_id_series.replace(idx_to_replace - 1, old_config)
             return idx_to_replace-1
 
         # no order changes necessary
@@ -163,7 +173,7 @@ class InteractiveChartWidget(IQChartView):
             if event.button() == Qt.RightButton:
                 self.point_is_pressed_idx = -1
 
-        self.point_was_pressed_idx = -1  # chart_clicked is last execution of events, reset point was pressed
+        # self.point_was_pressed_idx = -1  # chart_clicked is last execution of events, reset point was pressed
 
     @Slot()
     def chart_released(self, event):

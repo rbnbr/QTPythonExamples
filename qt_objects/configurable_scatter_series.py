@@ -63,6 +63,9 @@ class ConfigurableScatterSeries(QScatterSeries):
         self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf
         self.update_points_configuration()
 
+    def get_configuration_for_point_at_idx(self, idx: int):
+        return self._points_id_configuration[self.get_id_of_point_idx(idx)]
+
     def update_points_configuration(self):
         """
         Updates the configuration of scatterseries with the current points_id_configuration.
@@ -107,7 +110,8 @@ class ConfigurableScatterSeries(QScatterSeries):
     @Slot(int)
     def id_series_replaced(self, idx: int):
         # replacing does not change id, we only change values here.
-        # self.point_id_series.replace(idx, self.point_id_series.at(idx))
-        # self.update_points_configuration()
+        # to change id, implement it when replacing
+        # self._point_id_series.replace(idx, self._point_id_series.at(idx))
+        self.update_points_configuration()
         pass
 
