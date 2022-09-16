@@ -102,6 +102,13 @@ class TransferFunctionWidget(InteractiveChartWidget):
         """
         return self.scatterseries.get_configuration_for_point_at_idx(point_idx)[QXYSeries.PointConfiguration.Color]
 
+    def get_current_color_map(self):
+        """
+        Returns a list of colors for each value between 0 and 255.
+        :return:
+        """
+        return [self.get_current_color_for(x) for x in range(256)]
+
     def get_current_color_for(self, x):
         """
         Returns the current color for x based on the transfer function.
@@ -110,9 +117,9 @@ class TransferFunctionWidget(InteractiveChartWidget):
         """
         left, right = 0, self.scatterseries.count() - 1
         if x <= self.axis_x.min():
-            return self.scatterseries.get_configuration_for_point_at_idx(left)
+            return self.get_point_color_with_idx(left)
         if x >= self.axis_x.max():
-            return self.scatterseries.get_configuration_for_point_at_idx(right)
+            return self.get_point_color_with_idx(right)
 
         # get left and right of x
         for i in range(0, self.scatterseries.count()):
@@ -126,7 +133,9 @@ class TransferFunctionWidget(InteractiveChartWidget):
         # TODO: other interpolation methods
         printd(left, right)
         l = self.scatterseries.at(right).x() - self.scatterseries.at(left).x()
-        t = (x - self.scatterseries.at(left).x()) / l
+        if l == 0:
+            l = 1
+        t = (x - self.scatterseries.at(left).x()) / float(l)
 
         return interpolate_colors(left_color, right_color, t)
 
@@ -165,6 +174,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         self.changed_signal.emit()
 
+        # print(self.get_current_color_map())
+
         # old_point = self.scatterseries.at(point_idx)
         # old_point.setY(self.axis_y.min() + color.alphaF() * self.axis_y.max())
         # self.scatterseries.replace(point_idx, old_point)
@@ -198,8 +209,9 @@ class TransferFunctionWidget(InteractiveChartWidget):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.insert(idx, self.scatterseries.at(idx))
 
-        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
-                                                        self.adjust_point_color_with_alpha(self.default_color, idx)})
+        # self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
+        #                                                self.adjust_point_color_with_alpha(self.default_color, idx)})
+        self.update_point_color(self.default_color, idx)
 
         printd("point_added", idx, self.scatterseries.get_id_of_point_idx(idx))
         printd(self.scatterseries.get_points_id_configuration())
@@ -215,9 +227,10 @@ class TransferFunctionWidget(InteractiveChartWidget):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.replace(idx, self.scatterseries.at(idx))
 
-        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
-                                                           self.adjust_point_color_with_alpha(
-                                                               self.get_point_color_with_idx(idx), idx)})
+        # self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
+        #                                                    self.adjust_point_color_with_alpha(
+        #                                                        self.get_point_color_with_idx(idx), idx)})
+        self.update_point_color(self.get_point_color_with_idx(idx), idx)
         printd("point_replaced", idx, self.scatterseries.get_id_of_point_idx(idx), self.adjust_point_color_with_alpha(
                                                                self.get_point_color_with_idx(idx), idx))
         printd(self.scatterseries.get_points_id_configuration())
