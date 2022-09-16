@@ -1,3 +1,4 @@
+import PySide6
 from PySide6.QtCharts import QXYSeries
 from PySide6.QtCore import Slot, QMargins, Qt, Signal
 from PySide6.QtGui import QMouseEvent, QColor
@@ -48,19 +49,32 @@ class TransferFunctionWidget(InteractiveChartWidget):
             self.line_series.attachAxis(self.axis_x)
             self.line_series.attachAxis(self.axis_y)
 
+        # x and y range
+        self.x_range = (0, 255)
+        self.y_range = (0, 1)
+
+        marker_size = 2**3.5
+
+        # set margins (xleft, xright, ybottom, ytop)
+        self.axis_margins = (marker_size, marker_size - 4, marker_size, marker_size + 2)
+
         # set x-axis
         self.axis_x.setTickCount(2)
-        self.axis_x.setRange(0, 255)
+        self.axis_x.setRange(self.x_range[0],
+                             self.x_range[1])
         self.axis_x.setVisible(False)
 
         # set y-axis
         self.axis_y.setTickCount(2)
-        self.axis_y.setRange(0, 1)
+        self.axis_y.setRange(self.y_range[0],
+                             self.y_range[1])
         self.axis_y.setVisible(False)
 
         # remove border empty space
         self.chart().setMargins(QMargins(0, 0, 0, 0))
+        #self.chart().setContentsMargins(10, 10, 10, 10)
         self.chart().legend().setVisible(False)
+        #self.setContentsMargins(-10, -10, -10, -10)
 
         # set background
         self.chart().setBackgroundBrush(QColor(Qt.lightGray))
@@ -68,7 +82,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         # adjust marker size
         self.scatterseries.setColor(QColor(Qt.black))
-        self.scatterseries.setMarkerSize(2**3.5)
+        self.scatterseries.setMarkerSize(marker_size)
         self.scatterseries.setBorderColor(Qt.black)
 
         # default color
@@ -80,15 +94,30 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.scatterseries.pointReplaced.connect(self.point_replaced)
 
         # set default points (they are not deletable)
-        self.scatterseries.append(self.axis_x.min(), self.axis_y.min())
-        self.scatterseries.append(self.axis_x.max(), self.axis_y.max())
+        self.scatterseries.append(self.x_range[0], self.y_range[0])
+        self.scatterseries.append(self.x_range[1], self.y_range[1])
         # self.scatterseries.setPointConfiguration(0, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
         # self.scatterseries.setPointConfiguration(1, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
 
         self.chart().addSeries(self.scatterseries)
+        self.scatterseries.attachAxis(self.axis_x)
+        self.scatterseries.attachAxis(self.axis_y)
 
         # color selector
         self.mouse_clicked_signal.connect(self.open_color_picker)
+
+    def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
+        super(TransferFunctionWidget, self).resizeEvent(event)
+
+        size = event.size()
+
+        self.axis_x.setRange(
+            self.x_range[0] - (self.axis_margins[0] * ((self.x_range[1] - self.x_range[0]) / size.width())),
+            self.x_range[1] + (self.axis_margins[1] * ((self.x_range[1] - self.x_range[0]) / size.width())))
+
+        self.axis_y.setRange(
+            self.y_range[0] - (self.axis_margins[2] * ((self.y_range[1] - self.y_range[0]) / size.height())),
+            self.y_range[1] + (self.axis_margins[3] * ((self.y_range[1] - self.y_range[0]) / size.height())))
 
     @property
     def default_color(self):
@@ -116,9 +145,9 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :return:
         """
         left, right = 0, self.scatterseries.count() - 1
-        if x <= self.axis_x.min():
+        if x <= self.x_range[0]:
             return self.get_point_color_with_idx(left)
-        if x >= self.axis_x.max():
+        if x >= self.x_range[1]:
             return self.get_point_color_with_idx(right)
 
         # get left and right of x
@@ -156,7 +185,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :return:
         """
         point = self.scatterseries.at(point_idx)
-        alpha = point.y() / (self.axis_y.max() - self.axis_y.min())
+        alpha = point.y() / (self.y_range[1] - self.y_range[0])
         return alpha
 
     @Slot()
@@ -248,8 +277,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
             return
 
         value = self.chart().mapToValue(event.localPos())
-        if value.x() <= self.axis_x.min() or value.x() >= self.axis_x.max() or \
-                value.y() < self.axis_y.min() or value.y() > self.axis_y.max():
+        if value.x() <= self.x_range[0] or value.x() >= self.x_range[1] or \
+                value.y() < self.y_range[0] or value.y() > self.y_range[1]:
             pass
         else:
             super().chart_clicked(event)
@@ -264,15 +293,32 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :return:
         """
         value = self.chart().mapToValue(event.localPos())
-        if value.x() < self.axis_x.min() or value.x() > self.axis_x.max() or \
-                value.y() < self.axis_y.min() or value.y() > self.axis_y.max():
-            self.point_is_pressed_idx = -1
-        else:
-            if self.point_is_pressed_idx == 0 or self.point_is_pressed_idx == self.scatterseries.count() - 1:
-                value.setX(self.scatterseries.at(self.point_is_pressed_idx).x())
-                if event.buttons() == Qt.LeftButton:
-                    self.scatterseries.replace(self.point_is_pressed_idx, value)
-                else:
-                    self.point_is_pressed_idx = -1
+
+        # adjust value to be still in range
+        if value.x() < self.x_range[0] or value.x() > self.x_range[1] or \
+            value.y() < self.y_range[0] or value.y() > self.y_range[1]:
+
+            if value.x() < self.x_range[0]:
+                value.setX(self.x_range[0])
+
+            if value.x() > self.x_range[1]:
+                value.setX(self.x_range[1])
+
+            if value.y() < self.y_range[0]:
+                value.setY(self.y_range[0])
+
+            if value.y() > self.y_range[1]:
+                value.setY(self.y_range[1])
+
+        if self.point_is_pressed_idx == 0 or self.point_is_pressed_idx == self.scatterseries.count() - 1:
+            value.setX(self.scatterseries.at(self.point_is_pressed_idx).x())
+            if event.buttons() == Qt.LeftButton:
+                self.scatterseries.replace(self.point_is_pressed_idx, value)
             else:
-                super().chart_moved(event)
+                self.point_is_pressed_idx = -1
+        else:
+            if self.point_is_pressed_idx != -1 and event.buttons() == Qt.LeftButton:
+                self.point_is_pressed_idx = self.sorted_replace(self.point_is_pressed_idx, value)
+                self.point_was_pressed_idx = self.point_is_pressed_idx
+            else:
+                self.point_is_pressed_idx = -1
