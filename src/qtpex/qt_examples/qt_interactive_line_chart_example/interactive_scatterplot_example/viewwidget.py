@@ -6,7 +6,7 @@ from PySide6.QtGui import QPainter, QMouseEvent, QColor
 from PySide6.QtCharts import QChart, QLineSeries, QDateTimeAxis, QValueAxis, QScatterSeries
 
 from tablemodel import CustomTableModel
-from src.qt_widgets.iqchartview import IQChartView
+from qtpex.qt_widgets.iqchartview import IQChartView
 
 
 class Widget(QWidget):

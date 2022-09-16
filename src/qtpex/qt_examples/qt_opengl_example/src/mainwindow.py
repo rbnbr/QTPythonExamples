@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import QMainWindow
-from src.ui_mainwindow import Ui_MainWindow
-from src.opengl_widget import OpenGLWidget
-from PySide6 import QtCore
+from qtpex.qt_opengl_example.src.ui_mainwindow import Ui_MainWindow
+from qtpex.qt_opengl_example.src.opengl_widget import OpenGLWidget
 
 
 class MainWindow(QMainWindow):

@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from PySide6.QtWidgets import QApplication
-from src.qt_examples.qt_opengl_example.src.mainwindow import MainWindow
+from qtpex.qt_opengl_example.src.mainwindow import MainWindow
 
 from PySide6.QtGui import QSurfaceFormat
 

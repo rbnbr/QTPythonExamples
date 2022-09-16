@@ -4,9 +4,9 @@ from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QColorDialog
 from typing import Union
 
-from src.qt_utility.interpolation import interpolate_colors
-from src.qt_widgets.interactive_chart import InteractiveChartWidget
-from src.qt_objects.configurable_line_series import ConfigurableLineSeries
+from qtpex.qt_utility.interpolation import interpolate_colors
+from qtpex.qt_widgets.interactive_chart import InteractiveChartWidget
+from qtpex.qt_objects.configurable_line_series import ConfigurableLineSeries
 
 
 def printd(*args, **kwargs):

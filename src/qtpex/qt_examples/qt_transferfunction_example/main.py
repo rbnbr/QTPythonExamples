@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QMainWindow
-from src.qt_widgets.transferfunction_widget import TransferFunctionWidget
+from qtpex.qt_widgets.transferfunction_widget import TransferFunctionWidget
 
 
 if __name__ == "__main__":

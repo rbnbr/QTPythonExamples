@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QMainWindow
-from src.qt_widgets.interactive_chart import InteractiveChartWidget
+from qtpex.qt_widgets.interactive_chart import InteractiveChartWidget
 
 
 if __name__ == "__main__":
