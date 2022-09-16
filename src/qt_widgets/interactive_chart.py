@@ -1,9 +1,9 @@
-from PySide6.QtCharts import QChart, QScatterSeries, QValueAxis
+from PySide6.QtCharts import QChart, QValueAxis
 from PySide6.QtGui import QPainter, QMouseEvent
 from PySide6.QtWidgets import QSizePolicy
-from qt_objects.configurable_scatter_series import ConfigurableScatterSeries
+from src.qt_objects.configurable_scatter_series import ConfigurableScatterSeries
 
-from qt_widgets.iqchartview import IQChartView
+from src.qt_widgets.iqchartview import IQChartView
 from PySide6.QtCore import Slot, QPoint, Qt, Signal
 
 

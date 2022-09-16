@@ -1,12 +1,12 @@
 from PySide6.QtCharts import QXYSeries
-from PySide6.QtCore import Slot, QMargins, Qt, QPoint, Signal
+from PySide6.QtCore import Slot, QMargins, Qt, Signal
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QColorDialog
 from typing import Union
 
-from qt_utility.interpolation import interpolate_colors
-from qt_widgets.interactive_chart import InteractiveChartWidget
-from qt_objects.configurable_line_series import ConfigurableLineSeries
+from src.qt_utility.interpolation import interpolate_colors
+from src.qt_widgets.interactive_chart import InteractiveChartWidget
+from src.qt_objects.configurable_line_series import ConfigurableLineSeries
 
 
 def printd(*args, **kwargs):

@@ -1,13 +1,13 @@
 import sys
 
 from PySide6.QtWidgets import QApplication, QMainWindow
-from qt_widgets.transferfunction_widget import TransferFunctionWidget
+from src.qt_widgets.interactive_chart import InteractiveChartWidget
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    widget = TransferFunctionWidget("linear")
+    widget = InteractiveChartWidget()
     window = QMainWindow()
     window.setCentralWidget(widget)
 
