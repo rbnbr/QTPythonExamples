@@ -1,5 +1,5 @@
 from PySide6.QtCharts import QXYSeries
-from PySide6.QtCore import Slot, QMargins, Qt, QPoint
+from PySide6.QtCore import Slot, QMargins, Qt, QPoint, Signal
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QColorDialog
 from typing import Union
@@ -27,6 +27,8 @@ class InterpolationModes:
 
 
 class TransferFunctionWidget(InteractiveChartWidget):
+    changed_signal = Signal()  # fired when the something was changed that affects the resulting color map
+
     def __init__(self, interpolation_mode: Union[Interpolation, str], parent: QWidget = None):
         super().__init__(parent=parent)
 
@@ -67,7 +69,10 @@ class TransferFunctionWidget(InteractiveChartWidget):
         # adjust marker size
         self.scatterseries.setColor(QColor(Qt.black))
         self.scatterseries.setMarkerSize(2**3.5)
-        self.scatterseries.setBorderColor(Qt.transparent)
+        self.scatterseries.setBorderColor(Qt.black)
+
+        # default color
+        self._default_color = QColor(Qt.black)
 
         # connect signal to slots
         self.scatterseries.pointAdded.connect(self.point_added)
@@ -84,6 +89,18 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         # color selector
         self.mouse_clicked_signal.connect(self.open_color_picker)
+
+    @property
+    def default_color(self):
+        return QColor(self._default_color)
+
+    def get_point_color_with_idx(self, point_idx):
+        """
+        Returns the color in the stored configuration for point with given idx.
+        :param point_idx:
+        :return:
+        """
+        return self.scatterseries.get_configuration_for_point_at_idx(point_idx)[QXYSeries.PointConfiguration.Color]
 
     def get_current_color_for(self, x):
         """
@@ -103,9 +120,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
                 left, right = (i - 1), i
                 break
 
-        left_color = self.scatterseries.get_configuration_for_point_at_idx(left)[QXYSeries.PointConfiguration.Color]
-        right_color = self.scatterseries.get_configuration_for_point_at_idx(right)[QXYSeries.PointConfiguration.Color]
-
+        left_color = self.get_point_color_with_idx(left)
+        right_color = self.get_point_color_with_idx(right)
 
         # TODO: other interpolation methods
         printd(left, right)
@@ -113,6 +129,45 @@ class TransferFunctionWidget(InteractiveChartWidget):
         t = (x - self.scatterseries.at(left).x()) / l
 
         return interpolate_colors(left_color, right_color, t)
+
+    def adjust_point_color_with_alpha(self, color: QColor, point_idx: int):
+        """
+        Returns the color for this point with adjusted alpha value.
+        :param color:
+        :param point_idx:
+        :return:
+        """
+        color.setAlphaF(self.get_point_alpha(point_idx))
+        return color
+
+    def get_point_alpha(self, point_idx: int):
+        """
+        Returns the alpha value [0, 1] of this point.
+        :param point_idx:
+        :return:
+        """
+        point = self.scatterseries.at(point_idx)
+        alpha = point.y() / (self.axis_y.max() - self.axis_y.min())
+        return alpha
+
+    @Slot()
+    def update_point_color(self, color: QColor, point_idx: int):
+        """
+        Updates the point color and y-value (transparency) based on the selected color.
+        :param color:
+        :param point_idx:
+        :return:
+        """
+        # color picker always returns a color with full opacity so we need to adjust that
+        self.scatterseries.setPointConfiguration(
+            point_idx, {QXYSeries.PointConfiguration.Color:
+                                             self.adjust_point_color_with_alpha(color, point_idx)})
+
+        self.changed_signal.emit()
+
+        # old_point = self.scatterseries.at(point_idx)
+        # old_point.setY(self.axis_y.min() + color.alphaF() * self.axis_y.max())
+        # self.scatterseries.replace(point_idx, old_point)
 
     @Slot()
     def open_color_picker(self, event: QMouseEvent):
@@ -127,22 +182,27 @@ class TransferFunctionWidget(InteractiveChartWidget):
         if event.button() == Qt.RightButton:
             color_picker = QColorDialog(self)
 
-            color_picker.colorSelected.connect(
-                lambda c: self.scatterseries.setPointConfiguration(
-                    self.point_was_pressed_idx, {QXYSeries.PointConfiguration.Color: c}))
+            v = self.point_was_pressed_idx
+
+            color_picker.colorSelected.connect(lambda c: self.update_point_color(c, v))
 
             color_picker.show()
 
-        printd(self.get_current_color_for(155))
+            self.point_is_pressed_idx = -1
+            self.point_was_pressed_idx = self.point_is_pressed_idx
+
+        # printd(self.get_current_color_for(155))
 
     @Slot(int)
     def point_added(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.insert(idx, self.scatterseries.at(idx))
 
-        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color: QColor(Qt.black)})
+        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
+                                                        self.adjust_point_color_with_alpha(self.default_color, idx)})
 
-        printd("point_added")
+        printd("point_added", idx, self.scatterseries.get_id_of_point_idx(idx))
+        printd(self.scatterseries.get_points_id_configuration())
 
     @Slot(int)
     def point_removed(self, idx: int):
@@ -154,7 +214,13 @@ class TransferFunctionWidget(InteractiveChartWidget):
     def point_replaced(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.replace(idx, self.scatterseries.at(idx))
-        printd("point_replaced")
+
+        self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
+                                                           self.adjust_point_color_with_alpha(
+                                                               self.get_point_color_with_idx(idx), idx)})
+        printd("point_replaced", idx, self.scatterseries.get_id_of_point_idx(idx), self.adjust_point_color_with_alpha(
+                                                               self.get_point_color_with_idx(idx), idx))
+        printd(self.scatterseries.get_points_id_configuration())
 
     @Slot()
     def chart_clicked(self, event: QMouseEvent):

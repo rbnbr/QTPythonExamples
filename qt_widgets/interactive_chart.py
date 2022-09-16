@@ -119,18 +119,18 @@ class InteractiveChartWidget(IQChartView):
             series.replace(idx_to_replace + 1, new_point)
 
             # do this for id as well
-            old_config = series._point_id_series.at(idx_to_replace)
-            series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace + 1))
-            series._point_id_series.replace(idx_to_replace + 1, old_config)
+            # old_config = series._point_id_series.at(idx_to_replace)
+            # series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace + 1))
+            # series._point_id_series.replace(idx_to_replace + 1, old_config)
             return idx_to_replace + 1
         if idx_to_replace > 0 and new_point.x() < series.at(idx_to_replace - 1).x():
             series.replace(idx_to_replace, series.at(idx_to_replace-1))
             series.replace(idx_to_replace-1, new_point)
 
             # do this for id as well
-            old_config = series._point_id_series.at(idx_to_replace)
-            series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace - 1))
-            series._point_id_series.replace(idx_to_replace - 1, old_config)
+            # old_config = series._point_id_series.at(idx_to_replace)
+            # series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace - 1))
+            # series._point_id_series.replace(idx_to_replace - 1, old_config)
             return idx_to_replace-1
 
         # no order changes necessary

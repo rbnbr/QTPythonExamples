@@ -51,7 +51,7 @@ class ConfigurableScatterSeries(QScatterSeries):
         :param idx:
         :return:
         """
-        return self._point_id_series.at(idx).y()
+        return int(self._point_id_series.at(idx).y())
 
     def set_id_configuration_for_point_at_idx(self, idx: int, conf: dict):
         """
@@ -60,11 +60,11 @@ class ConfigurableScatterSeries(QScatterSeries):
         :param idx:
         :return:
         """
-        self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf
+        self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf.copy()
         self.update_points_configuration()
 
     def get_configuration_for_point_at_idx(self, idx: int):
-        return self._points_id_configuration[self.get_id_of_point_idx(idx)]
+        return self._points_id_configuration[self.get_id_of_point_idx(idx)].copy()
 
     def update_points_configuration(self):
         """
@@ -74,8 +74,8 @@ class ConfigurableScatterSeries(QScatterSeries):
         conf = {}
         for i in range(self._point_id_series.count()):
             conf.update({
-                i: self._points_id_configuration[self._point_id_series.at(i).y()]
-                if self._point_id_series.at(i).y() in self._points_id_configuration else dict()
+                i: self._points_id_configuration[self.get_id_of_point_idx(i)].copy()
+                if self.get_id_of_point_idx(i) in self._points_id_configuration else dict()
             })
 
         super().setPointsConfiguration(conf)
@@ -86,10 +86,10 @@ class ConfigurableScatterSeries(QScatterSeries):
         The id's are the point's id's from point_id_series.
         :return:
         """
-        return self._points_id_configuration
+        return self._points_id_configuration.copy()
 
-    def set_points_id_configuration(self, conf):
-        self._points_id_configuration = conf
+    def set_points_id_configuration(self, conf: dict):
+        self._points_id_configuration = conf.copy()
         self.update_points_configuration()
 
     @Slot(int)
@@ -111,7 +111,7 @@ class ConfigurableScatterSeries(QScatterSeries):
     def id_series_replaced(self, idx: int):
         # replacing does not change id, we only change values here.
         # to change id, implement it when replacing
-        # self._point_id_series.replace(idx, self._point_id_series.at(idx))
+        self._point_id_series.replace(idx, self._point_id_series.at(idx))
         self.update_points_configuration()
         pass
 
