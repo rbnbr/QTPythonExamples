@@ -266,11 +266,13 @@ class TransferFunctionWidget(InteractiveChartWidget):
         value = self.chart().mapToValue(event.localPos())
         if value.x() < self.axis_x.min() or value.x() > self.axis_x.max() or \
                 value.y() < self.axis_y.min() or value.y() > self.axis_y.max():
-            pass
+            self.point_is_pressed_idx = -1
         else:
             if self.point_is_pressed_idx == 0 or self.point_is_pressed_idx == self.scatterseries.count() - 1:
                 value.setX(self.scatterseries.at(self.point_is_pressed_idx).x())
                 if event.buttons() == Qt.LeftButton:
                     self.scatterseries.replace(self.point_is_pressed_idx, value)
+                else:
+                    self.point_is_pressed_idx = -1
             else:
                 super().chart_moved(event)
