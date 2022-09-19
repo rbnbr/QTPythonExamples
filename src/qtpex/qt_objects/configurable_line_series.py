@@ -1,7 +1,7 @@
 from typing import Dict, Any
 
 import PySide6
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, Signal
 
 from PySide6.QtCharts import QLineSeries, QScatterSeries
 
@@ -12,6 +12,7 @@ class ConfigurableLineSeries(QLineSeries):
         It overrides the set configuration methods for the points to keep the same configurations even if points
             are deleted, or replaced, or intermediately inserted.
         """
+    swapped_signal = Signal(int, int)
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
@@ -23,8 +24,26 @@ class ConfigurableLineSeries(QLineSeries):
         self.pointAdded.connect(self.id_series_added)
         self.pointReplaced.connect(self.id_series_replaced)
         self.pointRemoved.connect(self.id_series_removed)
+        self.swapped_signal.connect(self.id_series_swapped)
 
         self._points_id_configuration = {}
+
+    def swap(self, idx1: int, idx2: int):
+        """
+        Swaps the index of two points and keeps their configuration.
+        Triggers the swap signal.
+        Does not trigger other signals.
+        :param idx1:
+        :param idx2:
+        :return:
+        """
+        self.blockSignals(True)
+        tmp = self.at(idx2)
+        self.replace(idx2, self.at(idx1))
+        self.replace(idx1, tmp)
+        self.blockSignals(False)
+
+        self.swapped_signal.emit(idx1, idx2)
 
     def setPointConfiguration(self, index: int,
                               configuration: Dict[PySide6.QtCharts.QXYSeries.PointConfiguration, Any]) -> None:
@@ -51,7 +70,7 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx:
         :return:
         """
-        return self._point_id_series.at(idx).y()
+        return int(self._point_id_series.at(idx).y())
 
     def set_id_configuration_for_point_at_idx(self, idx: int, conf: dict):
         """
@@ -60,8 +79,11 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx:
         :return:
         """
-        self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf
+        self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf.copy()
         self.update_points_configuration()
+
+    def get_configuration_for_point_at_idx(self, idx: int):
+        return self._points_id_configuration[self.get_id_of_point_idx(idx)].copy()
 
     def update_points_configuration(self):
         """
@@ -71,8 +93,8 @@ class ConfigurableLineSeries(QLineSeries):
         conf = {}
         for i in range(self._point_id_series.count()):
             conf.update({
-                i: self._points_id_configuration[self._point_id_series.at(i).y()]
-                if self._point_id_series.at(i).y() in self._points_id_configuration else dict()
+                i: self._points_id_configuration[self.get_id_of_point_idx(i)].copy()
+                if self.get_id_of_point_idx(i) in self._points_id_configuration else dict()
             })
 
         super().setPointsConfiguration(conf)
@@ -83,10 +105,10 @@ class ConfigurableLineSeries(QLineSeries):
         The id's are the point's id's from point_id_series.
         :return:
         """
-        return self._points_id_configuration
+        return self._points_id_configuration.copy()
 
-    def set_points_id_configuration(self, conf):
-        self._points_id_configuration = conf
+    def set_points_id_configuration(self, conf: dict):
+        self._points_id_configuration = conf.copy()
         self.update_points_configuration()
 
     @Slot(int)
@@ -107,7 +129,20 @@ class ConfigurableLineSeries(QLineSeries):
     @Slot(int)
     def id_series_replaced(self, idx: int):
         # replacing does not change id, we only change values here.
-        # self._point_id_series.replace(idx, self._point_id_series.at(idx))
-        # self.update_points_configuration()
+        # to change id, implement it when replacing
+        self._point_id_series.replace(idx, self._point_id_series.at(idx))
+        self.update_points_configuration()
         pass
 
+    @Slot(int, int)
+    def id_series_swapped(self, idx1: int, idx2: int):
+        """
+        Swappes the id_series points.
+        :param idx1:
+        :param idx2:
+        :return:
+        """
+        tmp = self._point_id_series.at(idx1)
+        self._point_id_series.replace(idx1, self._point_id_series.at(idx2))
+        self._point_id_series.replace(idx2, tmp)
+        self.update_points_configuration()

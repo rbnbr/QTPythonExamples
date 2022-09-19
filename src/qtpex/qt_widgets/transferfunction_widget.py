@@ -92,6 +92,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.scatterseries.pointAdded.connect(self.point_added)
         self.scatterseries.pointRemoved.connect(self.point_removed)
         self.scatterseries.pointReplaced.connect(self.point_replaced)
+        self.scatterseries.swapped_signal.connect(self.points_swapped)
 
         # set default points (they are not deletable)
         self.scatterseries.append(self.x_range[0], self.y_range[0])
@@ -251,6 +252,11 @@ class TransferFunctionWidget(InteractiveChartWidget):
             self.line_series.remove(idx)
         printd("point_removed")
 
+    @Slot(int, int)
+    def points_swapped(self, idx1: int, idx2: int):
+        if self.interpolation_mode == InterpolationModes.LINEAR.mode:
+            self.line_series.swap(idx1, idx2)
+
     @Slot(int)
     def point_replaced(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
@@ -259,6 +265,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         # self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
         #                                                    self.adjust_point_color_with_alpha(
         #                                                        self.get_point_color_with_idx(idx), idx)})
+
         self.update_point_color(self.get_point_color_with_idx(idx), idx)
         printd("point_replaced", idx, self.scatterseries.get_id_of_point_idx(idx), self.adjust_point_color_with_alpha(
                                                                self.get_point_color_with_idx(idx), idx))

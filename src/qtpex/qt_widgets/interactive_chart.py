@@ -104,6 +104,7 @@ class InteractiveChartWidget(IQChartView):
     def sorted_replace(self, idx_to_replace, new_point: QPoint, series=None):
         """
         Replace point of idx_to_replace with new_point but keeps ordering in series.
+        Uses swap for the first replace if available (otherwise 2 replace), thus, does not call replace signal.
         :param series:
         :param idx_to_replace:
         :param new_point:
@@ -115,22 +116,20 @@ class InteractiveChartWidget(IQChartView):
         # check if order changes
         if idx_to_replace < series.count() - 1 and new_point.x() > series.at(idx_to_replace + 1).x():
             # swap index with next one
-            series.replace(idx_to_replace, series.at(idx_to_replace+1))
+            if hasattr(series, "swap"):
+                series.swap(idx_to_replace, idx_to_replace+1)
+            else:
+                series.replace(idx_to_replace, series.at(idx_to_replace+1))
             series.replace(idx_to_replace + 1, new_point)
 
-            # do this for id as well
-            # old_config = series._point_id_series.at(idx_to_replace)
-            # series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace + 1))
-            # series._point_id_series.replace(idx_to_replace + 1, old_config)
             return idx_to_replace + 1
         if idx_to_replace > 0 and new_point.x() < series.at(idx_to_replace - 1).x():
-            series.replace(idx_to_replace, series.at(idx_to_replace-1))
+            if hasattr(series, "swap"):
+                series.swap(idx_to_replace, idx_to_replace-1)
+            else:
+                series.replace(idx_to_replace, series.at(idx_to_replace-1))
             series.replace(idx_to_replace-1, new_point)
 
-            # do this for id as well
-            # old_config = series._point_id_series.at(idx_to_replace)
-            # series._point_id_series.replace(idx_to_replace, series._point_id_series.at(idx_to_replace - 1))
-            # series._point_id_series.replace(idx_to_replace - 1, old_config)
             return idx_to_replace-1
 
         # no order changes necessary
