@@ -241,6 +241,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         # self.scatterseries.setPointConfiguration(idx, {QXYSeries.PointConfiguration.Color:
         #                                                self.adjust_point_color_with_alpha(self.default_color, idx)})
+
+        # self.scatterseries.setPointConfiguration(idx, {"lolol": True})
         self.update_point_color(self.default_color, idx)
 
         printd("point_added", idx, self.scatterseries.get_id_of_point_idx(idx))

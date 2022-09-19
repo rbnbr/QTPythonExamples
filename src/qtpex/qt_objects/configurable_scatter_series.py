@@ -49,6 +49,19 @@ class ConfigurableScatterSeries(QScatterSeries):
                               configuration: Dict[PySide6.QtCharts.QXYSeries.PointConfiguration, Any]) -> None:
         self.set_id_configuration_for_point_at_idx(index, configuration)
 
+    def setPointConfigurationKeyVal(self, index: int, key, val):
+        """
+        Sets only key and value of for the point at given index.
+        Does not adjust the other values.
+        :param index:
+        :param key:
+        :param val:
+        :return:
+        """
+        conf = self.get_configuration_for_point_at_idx(idx=index)
+        conf[key] = val
+        self.set_id_configuration_for_point_at_idx(index, conf)
+
     def setPointsConfiguration(self, pointsConfiguration: Dict[
         int, Dict[PySide6.QtCharts.QXYSeries.PointConfiguration, Any]]) -> None:
         """
@@ -64,6 +77,24 @@ class ConfigurableScatterSeries(QScatterSeries):
         for idx in pointsConfiguration:
             self.setPointConfiguration(idx, pointsConfiguration[idx])
 
+    def clearPointConfiguration(self, index: int, key=None) -> None:
+        if key is None:
+            del self._points_id_configuration[self.get_id_of_point_idx(index)]
+            super().clearPointConfiguration(index)
+        else:
+            del self._points_id_configuration[self.get_id_of_point_idx(index)][key]
+            super().clearPointConfiguration(index, key)
+
+    def clearPointsConfiguration(self, key=None) -> None:
+        if key is None:
+            self._points_id_configuration = dict()
+            super().clearPointsConfiguration()
+        else:
+            for idx in self._points_id_configuration:
+                if key in self._points_id_configuration[idx]:
+                    del self._points_id_configuration[idx][key]
+            super().clearPointsConfiguration(key)
+
     def get_id_of_point_idx(self, idx: int):
         """
         Returns the id of the point idx.
@@ -72,6 +103,18 @@ class ConfigurableScatterSeries(QScatterSeries):
         """
         return int(self._point_id_series.at(idx).y())
 
+    def get_idx_of_point_id(self, point_id: int):
+        """
+        Returns the current index of the point with given id.
+        Returns -1 if not found.
+        :param point_id:
+        :return:
+        """
+        for i in range(self.count()):
+            if int(point_id) == self.get_id_of_point_idx(i):
+                return i
+        return -1
+
     def set_id_configuration_for_point_at_idx(self, idx: int, conf: dict):
         """
         Sets the configuration for the point at idx based on its id.
@@ -79,11 +122,30 @@ class ConfigurableScatterSeries(QScatterSeries):
         :param idx:
         :return:
         """
-        self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf.copy()
+        if self.get_id_of_point_idx(idx) in self._points_id_configuration:
+            self._points_id_configuration[self.get_id_of_point_idx(idx)].update(conf.copy())
+        else:
+            self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf.copy()
         self.update_points_configuration()
 
     def get_configuration_for_point_at_idx(self, idx: int):
         return self._points_id_configuration[self.get_id_of_point_idx(idx)].copy()
+
+    @staticmethod
+    def get_qt_point_configuration_keys():
+        return [
+            QScatterSeries.PointConfiguration.Color,
+            QScatterSeries.PointConfiguration.Size,
+            QScatterSeries.PointConfiguration.Visibility,
+            QScatterSeries.PointConfiguration.LabelVisibility
+        ]
+
+    def get_points_configuration_with_limited_keys(self, conf: dict):
+        d = dict()
+        for k in self.get_qt_point_configuration_keys():
+            if k in conf:
+                d.update({k: conf[k]})
+        return d
 
     def update_points_configuration(self):
         """
@@ -92,9 +154,13 @@ class ConfigurableScatterSeries(QScatterSeries):
         """
         conf = {}
         for i in range(self._point_id_series.count()):
+            if self.get_id_of_point_idx(i) not in self._points_id_configuration:
+                continue
+
             conf.update({
-                i: self._points_id_configuration[self.get_id_of_point_idx(i)].copy()
-                if self.get_id_of_point_idx(i) in self._points_id_configuration else dict()
+                i: self.get_points_configuration_with_limited_keys(
+                    self._points_id_configuration[self.get_id_of_point_idx(i)]
+                )
             })
 
         super().setPointsConfiguration(conf)
