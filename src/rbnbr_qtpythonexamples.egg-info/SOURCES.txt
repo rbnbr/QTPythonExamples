@@ -30,6 +30,7 @@ src/qtpex/qt_objects/configurable_scatter_series.py
 src/qtpex/qt_objects/configurable_xy_series.py
 src/qtpex/qt_utility/__init__.py
 src/qtpex/qt_utility/interpolation.py
+src/qtpex/qt_utility/series.py
 src/qtpex/qt_widgets/__init__.py
 src/qtpex/qt_widgets/interactive_chart.py
 src/qtpex/qt_widgets/iqchartview.py

@@ -2,6 +2,7 @@ from PySide6.QtCharts import QChart, QValueAxis
 from PySide6.QtGui import QPainter, QMouseEvent
 from PySide6.QtWidgets import QSizePolicy
 from qtpex.qt_objects.configurable_scatter_series import ConfigurableScatterSeries
+from qtpex.qt_utility.series import find_point_idx
 
 from qtpex.qt_widgets.iqchartview import IQChartView
 from PySide6.QtCore import Slot, QPoint, Qt, Signal
@@ -70,18 +71,6 @@ class InteractiveChartWidget(IQChartView):
 
         # at any time, if this is != -1, then the current execution of chart events was induced by this point idx
         self.point_was_pressed_idx = -1
-
-    def find_point_idx(self, point: QPoint, series=None):
-        idx = -1
-
-        if series is None:
-            series = self.scatterseries
-
-        for i in range(series.count()):
-            if series.at(i) == point:
-                idx = i
-                break
-        return idx
 
     def sorted_insert(self, point, series=None):
         """
@@ -191,17 +180,17 @@ class InteractiveChartWidget(IQChartView):
         :param point:
         :return:
         """
-        printd("point_clicked:", point, self._moved, self.find_point_idx(point))
+        printd("point_clicked:", point, self._moved, find_point_idx(point, self.scatterseries))
 
     @Slot()
     def point_pressed(self, point):
         # print("point_pressed", point)
-        idx = self.find_point_idx(point)
+        idx = find_point_idx(point, self.scatterseries)
         printd("point idx pressed:", point, idx)
         self.point_is_pressed_idx = idx
         self.point_was_pressed_idx = self.point_is_pressed_idx
 
     @Slot()
     def point_released(self, point):
-        printd("point released", point, self.find_point_idx(point))
+        printd("point released", point, find_point_idx(point, self.scatterseries))
         self.point_is_pressed_idx = -1
