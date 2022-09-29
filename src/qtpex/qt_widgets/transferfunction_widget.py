@@ -291,6 +291,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
     def point_removed(self, idx: int):
         if self.interpolation_mode == InterpolationModes.LINEAR.mode:
             self.line_series.remove(idx)
+
+        self.changed_signal.emit()
         printd("point_removed")
 
     @Slot(int, int)
