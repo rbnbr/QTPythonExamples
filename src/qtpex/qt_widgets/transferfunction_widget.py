@@ -135,13 +135,12 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
     def copy_from_other_tf_widget(self, other):
         """
-        Resets self, then copies the values from the other transfer function widget.
+        Replaces own values with the values from the other transfer function widget.
         :param other:
         :return:
         """
-        self.reset_tf()
         for idx in range(other.scatterseries.count()):
-            self.scatterseries.append(other.scatterseries.at(idx))
+            self.scatterseries.replace(idx, other.scatterseries.at(idx))
             self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
 
     def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
