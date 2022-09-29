@@ -113,38 +113,52 @@ class TransferFunctionWidget(InteractiveChartWidget):
         Only works if scatter series is empty.
 
         Returns True on success, else False.
+
+        Triggers changed signal at most once
         :return:
         """
         if self.scatterseries.count() > 0:
             return False
         else:
+            self.blockSignals(True)
             self.scatterseries.append(self.x_range[0], self.y_range[0])
             self.scatterseries.append(self.x_range[1], self.y_range[1])
+            self.blockSignals(False)
+            self.changed_signal.emit()
             return True
 
     def reset_tf(self):
         """
         Clears the transfer function to initial state.
         Deletes all points and clears all configurations, then adds back default points.
+        Triggers changed_signal only once.
         :return:
         """
+        self.blockSignals(True)
         for i in reversed(range(self.scatterseries.count())):
             self.scatterseries.remove(i)
 
         self._add_default_points_()
+        self.blockSignals(False)
+        self.changed_signal.emit()
 
     def copy_from_other_tf_widget(self, other):
         """
         Removes own values, then adds the values from the other transfer function widget.
+
+        Triggers changed signal only once.
         :param other:
         :return:
         """
+        self.blockSignals(True)
         for i in reversed(range(self.scatterseries.count())):
             self.scatterseries.remove(i)
 
         for idx in range(other.scatterseries.count()):
             self.scatterseries.append(other.scatterseries.at(idx))
             self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
+        self.blockSignals(False)
+        self.changed_signal.emit()
 
     def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
         super(TransferFunctionWidget, self).resizeEvent(event)
