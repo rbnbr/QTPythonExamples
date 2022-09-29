@@ -27,6 +27,6 @@ def get_color_table(name: str):
     q_colors = []
 
     for i in range(int(len(colors) / 6)):
-        q_colors.append(QColor("#{}".format(colors[i:i+6])))
+        q_colors.append(QColor("#{}".format(colors[i*6:(i+1)*6])))
 
     return q_colors
