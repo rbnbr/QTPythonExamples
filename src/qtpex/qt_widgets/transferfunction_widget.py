@@ -140,7 +140,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :return:
         """
         self.reset_tf()
-        for idx in range(other.scatterseries):
+        for idx in range(other.scatterseries.count()):
             self.scatterseries.append(other.scatterseries.at(idx))
             self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
 
