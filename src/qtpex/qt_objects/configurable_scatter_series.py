@@ -189,6 +189,7 @@ class ConfigurableScatterSeries(QScatterSeries):
 
     @Slot(int)
     def id_series_removed(self, idx: int):
+        self.clearPointConfiguration(idx)
         self._point_id_series.remove(idx)
         self.update_points_configuration()
 

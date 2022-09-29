@@ -95,8 +95,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.scatterseries.swapped_signal.connect(self.points_swapped)
 
         # set default points (they are not deletable)
-        self.scatterseries.append(self.x_range[0], self.y_range[0])
-        self.scatterseries.append(self.x_range[1], self.y_range[1])
+        ok = self._add_default_points_()
+        assert ok, "failed to add default points"
         # self.scatterseries.setPointConfiguration(0, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
         # self.scatterseries.setPointConfiguration(1, {QXYSeries.PointConfiguration.Color: QColor(Qt.red)})
 
@@ -106,6 +106,43 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         # color selector
         self.mouse_clicked_signal.connect(self.open_color_picker)
+
+    def _add_default_points_(self) -> bool:
+        """
+        Adds default points.
+        Only works if scatter series is empty.
+
+        Returns True on success, else False.
+        :return:
+        """
+        if self.scatterseries.count() > 0:
+            return False
+        else:
+            self.scatterseries.append(self.x_range[0], self.y_range[0])
+            self.scatterseries.append(self.x_range[1], self.y_range[1])
+            return True
+
+    def reset_tf(self):
+        """
+        Clears the transfer function to initial state.
+        Deletes all points and clears all configurations, then adds back default points.
+        :return:
+        """
+        for i in reversed(range(self.scatterseries.count())):
+            self.scatterseries.remove(i)
+
+        self._add_default_points_()
+
+    def copy_from_other_tf_widget(self, other):
+        """
+        Resets self, then copies the values from the other transfer function widget.
+        :param other:
+        :return:
+        """
+        self.reset_tf()
+        for idx in range(other.scatterseries):
+            self.scatterseries.append(other.scatterseries.at(idx))
+            self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
 
     def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
         super(TransferFunctionWidget, self).resizeEvent(event)
