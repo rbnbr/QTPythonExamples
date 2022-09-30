@@ -185,7 +185,7 @@ class StaticConfigurableXYSeries:
         :param indices: The indices to be updated. If not specified, updates all indices.
         :return:
         """
-        if self.block_qt_configuration_updates:
+        if self._block_qt_configuration_updates:
             return
 
         update_batch = False
