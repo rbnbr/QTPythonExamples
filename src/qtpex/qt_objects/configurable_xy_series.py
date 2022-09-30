@@ -30,12 +30,12 @@ class StaticConfigurableXYSeries:
         # blocks calls to configuration updates
         # usefull for adding and removing lot's of points at once where we don't need the GUI to keep up with our
         # updates
-        self.block_qt_configuration_updates = False
+        self._block_qt_configuration_updates = False
 
         self._points_id_configuration = {}
 
     @staticmethod
-    def block_qt_configuration_updates(self, block: bool):
+    def block_qt_configuration_updates(self, block: bool = True):
         """
         sets the blocking state up configuration updates.
         usefull for adding and removing lot's of points at once where we don't need the GUI to keep up with our
@@ -46,7 +46,7 @@ class StaticConfigurableXYSeries:
         :param block:
         :return:
         """
-        self.block_qt_configuration_updates = block
+        self._block_qt_configuration_updates = block
 
     @staticmethod
     def swap(self, idx1: int, idx2: int):
