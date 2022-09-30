@@ -20,6 +20,19 @@ class ConfigurableLineSeries(QLineSeries):
         super().__init__(parent=parent)
         StaticConfigurableXYSeries.set_up_init(self)
 
+    def block_qt_configuration_updates(self, block: bool):
+        """
+        sets the blocking state up configuration updates.
+        usefull for adding and removing lot's of points at once where we don't need the GUI to keep up with our
+            updates.
+
+        Note that after a series of blocked updates, there should be a final call to unblock this and update manually.
+        :param self:
+        :param block:
+        :return:
+        """
+        return StaticConfigurableXYSeries.block_qt_configuration_updates(self, block)
+
     def swap(self, idx1: int, idx2: int):
         """
         Swaps the index of two points and keeps their configuration.

@@ -27,7 +27,26 @@ class StaticConfigurableXYSeries:
         self.pointRemoved.connect(self.id_series_removed)
         self.swapped_signal.connect(self.id_series_swapped)
 
+        # blocks calls to configuration updates
+        # usefull for adding and removing lot's of points at once where we don't need the GUI to keep up with our
+        # updates
+        self.block_qt_configuration_updates = False
+
         self._points_id_configuration = {}
+
+    @staticmethod
+    def block_qt_configuration_updates(self, block: bool):
+        """
+        sets the blocking state up configuration updates.
+        usefull for adding and removing lot's of points at once where we don't need the GUI to keep up with our
+            updates.
+
+        Note that after a series of blocked updates, there should be a final call to unblock this and update manually.
+        :param self:
+        :param block:
+        :return:
+        """
+        self.block_qt_configuration_updates = block
 
     @staticmethod
     def swap(self, idx1: int, idx2: int):
@@ -166,8 +185,15 @@ class StaticConfigurableXYSeries:
         :param indices: The indices to be updated. If not specified, updates all indices.
         :return:
         """
+        if self.block_qt_configuration_updates:
+            return
+
+        update_batch = False
         if indices is None:
+            update_batch = True
             indices = range(self._point_id_series.count())
+
+        conf = {}
 
         for i in indices:
             if self.get_id_of_point_idx(i) not in self._points_id_configuration:
@@ -176,7 +202,13 @@ class StaticConfigurableXYSeries:
             conf_i = self.get_points_configuration_with_limited_keys(
                 self._points_id_configuration[self.get_id_of_point_idx(i)])
 
-            super(self.__class__, self).setPointConfiguration(i, conf_i)
+            if not update_batch:
+                super(self.__class__, self).setPointConfiguration(i, conf_i)
+            else:
+                conf.update({i: conf_i})
+
+        if update_batch:
+            super(self.__class__, self).setPointsConfiguration(conf)
 
     @staticmethod
     def get_points_id_configuration(self):
