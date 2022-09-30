@@ -5,6 +5,8 @@ from PySide6.QtCore import Slot, Signal
 
 from PySide6.QtCharts import QLineSeries, QScatterSeries
 
+from qtpex.qt_objects.configurable_xy_series import StaticConfigurableXYSeries
+
 
 class ConfigurableLineSeries(QLineSeries):
     """
@@ -16,17 +18,7 @@ class ConfigurableLineSeries(QLineSeries):
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
-        # a scatter series that keeps track of the ids of individual points (their y-values)
-        self._point_id_series = QScatterSeries()
-        self._next_point_id = 0
-
-        self.pointAdded.connect(self.id_series_added)
-        self.pointReplaced.connect(self.id_series_replaced)
-        self.pointRemoved.connect(self.id_series_removed)
-        self.swapped_signal.connect(self.id_series_swapped)
-
-        self._points_id_configuration = {}
+        StaticConfigurableXYSeries.set_up_init(self)
 
     def swap(self, idx1: int, idx2: int):
         """
@@ -37,17 +29,11 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx2:
         :return:
         """
-        self.blockSignals(True)
-        tmp = self.at(idx2)
-        self.replace(idx2, self.at(idx1))
-        self.replace(idx1, tmp)
-        self.blockSignals(False)
-
-        self.swapped_signal.emit(idx1, idx2)
+        return StaticConfigurableXYSeries.swap(self, idx1, idx2)
 
     def setPointConfiguration(self, index: int,
                               configuration: Dict[PySide6.QtCharts.QXYSeries.PointConfiguration, Any]) -> None:
-        self.set_id_configuration_for_point_at_idx(index, configuration)
+        return StaticConfigurableXYSeries.setPointConfiguration(self, index, configuration)
 
     def setPointConfigurationKeyVal(self, index: int, key, val):
         """
@@ -58,9 +44,7 @@ class ConfigurableLineSeries(QLineSeries):
         :param val:
         :return:
         """
-        conf = self.get_configuration_for_point_at_idx(idx=index)
-        conf[key] = val
-        self.set_id_configuration_for_point_at_idx(index, conf)
+        return StaticConfigurableXYSeries.setPointConfigurationKeyVal(self, index, key, val)
 
     def setPointsConfiguration(self, pointsConfiguration: Dict[
         int, Dict[PySide6.QtCharts.QXYSeries.PointConfiguration, Any]]) -> None:
@@ -70,30 +54,13 @@ class ConfigurableLineSeries(QLineSeries):
         :param pointsConfiguration:
         :return:
         """
-        if len(pointsConfiguration) == 0:
-            self._points_id_configuration = {}
-            self.update_points_configuration()
-
-        for idx in pointsConfiguration:
-            self.setPointConfiguration(idx, pointsConfiguration[idx])
+        return StaticConfigurableXYSeries.setPointsConfiguration(self, pointsConfiguration)
 
     def clearPointConfiguration(self, index: int, key=None) -> None:
-        if key is None:
-            del self._points_id_configuration[self.get_id_of_point_idx(index)]
-            super().clearPointConfiguration(index)
-        else:
-            del self._points_id_configuration[self.get_id_of_point_idx(index)][key]
-            super().clearPointConfiguration(index, key)
+        return StaticConfigurableXYSeries.clearPointConfiguration(self, index, key)
 
     def clearPointsConfiguration(self, key=None) -> None:
-        if key is None:
-            self._points_id_configuration = dict()
-            super().clearPointsConfiguration()
-        else:
-            for idx in self._points_id_configuration:
-                if key in self._points_id_configuration[idx]:
-                    del self._points_id_configuration[idx][key]
-            super().clearPointsConfiguration(key)
+        return StaticConfigurableXYSeries.clearPointsConfiguration(self, key)
 
     def get_id_of_point_idx(self, idx: int):
         """
@@ -101,7 +68,7 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx:
         :return:
         """
-        return int(self._point_id_series.at(idx).y())
+        return StaticConfigurableXYSeries.get_id_of_point_idx(self, idx)
 
     def get_idx_of_point_id(self, point_id: int):
         """
@@ -110,10 +77,7 @@ class ConfigurableLineSeries(QLineSeries):
         :param point_id:
         :return:
         """
-        for i in range(self.count()):
-            if int(point_id) == self.get_id_of_point_idx(i):
-                return i
-        return -1
+        return StaticConfigurableXYSeries.get_idx_of_point_id(self, point_id)
 
     def set_id_configuration_for_point_at_idx(self, idx: int, conf: dict):
         """
@@ -122,48 +86,25 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx:
         :return:
         """
-        if self.get_id_of_point_idx(idx) in self._points_id_configuration:
-            self._points_id_configuration[self.get_id_of_point_idx(idx)].update(conf.copy())
-        else:
-            self._points_id_configuration[self.get_id_of_point_idx(idx)] = conf.copy()
-        self.update_points_configuration()
+        return StaticConfigurableXYSeries.set_id_configuration_for_point_at_idx(self, idx, conf)
 
     def get_configuration_for_point_at_idx(self, idx: int):
-        return self._points_id_configuration[self.get_id_of_point_idx(idx)].copy()
+        return StaticConfigurableXYSeries.get_configuration_for_point_at_idx(self, idx)
 
     @staticmethod
     def get_qt_point_configuration_keys():
-        return [
-            QScatterSeries.PointConfiguration.Color,
-            QScatterSeries.PointConfiguration.Size,
-            QScatterSeries.PointConfiguration.Visibility,
-            QScatterSeries.PointConfiguration.LabelVisibility
-        ]
+        return StaticConfigurableXYSeries.get_qt_point_configuration_keys()
 
     def get_points_configuration_with_limited_keys(self, conf: dict):
-        d = dict()
-        for k in self.get_qt_point_configuration_keys():
-            if k in conf:
-                d.update({k: conf[k]})
-        return d
+        return StaticConfigurableXYSeries.get_points_configuration_with_limited_keys(self, conf)
 
-    def update_points_configuration(self):
+    def update_points_configuration(self, indices=None):
         """
         Updates the configuration of scatterseries with the current points_id_configuration.
+        :param indices: The indices to be updated. If not specified, updates all indices.
         :return:
         """
-        conf = {}
-        for i in range(self._point_id_series.count()):
-            if self.get_id_of_point_idx(i) not in self._points_id_configuration:
-                continue
-
-            conf.update({
-                i: self.get_points_configuration_with_limited_keys(
-                    self._points_id_configuration[self.get_id_of_point_idx(i)]
-                )
-            })
-
-        super().setPointsConfiguration(conf)
+        return StaticConfigurableXYSeries.update_points_configuration(self, indices)
 
     def get_points_id_configuration(self):
         """
@@ -171,34 +112,22 @@ class ConfigurableLineSeries(QLineSeries):
         The id's are the point's id's from point_id_series.
         :return:
         """
-        return self._points_id_configuration.copy()
+        return StaticConfigurableXYSeries.get_points_id_configuration(self)
 
     def set_points_id_configuration(self, conf: dict):
-        self._points_id_configuration = conf.copy()
-        self.update_points_configuration()
+        return StaticConfigurableXYSeries.set_points_id_configuration(self, conf)
 
     @Slot(int)
     def id_series_added(self, idx: int):
-        p = self.at(idx)
-        p.setY(self._next_point_id)
-
-        self._point_id_series.insert(idx, p)
-
-        self._next_point_id += 1
-        self.update_points_configuration()
+        return StaticConfigurableXYSeries.id_series_added(self, idx)
 
     @Slot(int)
     def id_series_removed(self, idx: int):
-        self._point_id_series.remove(idx)
-        self.update_points_configuration()
+        return StaticConfigurableXYSeries.id_series_removed(self, idx)
 
     @Slot(int)
     def id_series_replaced(self, idx: int):
-        # replacing does not change id, we only change values here.
-        # to change id, implement it when replacing
-        self._point_id_series.replace(idx, self._point_id_series.at(idx))
-        self.update_points_configuration()
-        pass
+        return StaticConfigurableXYSeries.id_series_replaced(self, idx)
 
     @Slot(int, int)
     def id_series_swapped(self, idx1: int, idx2: int):
@@ -208,7 +137,4 @@ class ConfigurableLineSeries(QLineSeries):
         :param idx2:
         :return:
         """
-        tmp = self._point_id_series.at(idx1)
-        self._point_id_series.replace(idx1, self._point_id_series.at(idx2))
-        self._point_id_series.replace(idx2, tmp)
-        self.update_points_configuration()
+        return StaticConfigurableXYSeries.id_series_swapped(self, idx1, idx2)
