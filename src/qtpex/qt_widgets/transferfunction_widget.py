@@ -150,6 +150,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :param other:
         :return:
         """
+        prev_block_state = self.signalsBlocked()
         self.blockSignals(True)
         for i in reversed(range(self.scatterseries.count())):
             self.scatterseries.remove(i)
@@ -157,7 +158,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
         for idx in range(other.scatterseries.count()):
             self.scatterseries.append(other.scatterseries.at(idx))
             self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
-        self.blockSignals(False)
+        self.blockSignals(prev_block_state)
         self.changed_signal.emit()
 
     def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
