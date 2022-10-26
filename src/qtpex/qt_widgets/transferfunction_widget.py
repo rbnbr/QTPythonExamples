@@ -5,7 +5,7 @@ from PySide6.QtCharts import QXYSeries
 from PySide6.QtCore import Slot, QMargins, Qt, Signal
 from PySide6.QtGui import QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QColorDialog
-from typing import Union
+from typing import Union, Any
 
 from qtpex.qt_utility.interpolation import interpolate_colors
 from qtpex.qt_widgets.interactive_chart import InteractiveChartWidget
@@ -163,6 +163,21 @@ class TransferFunctionWidget(InteractiveChartWidget):
         self.blockSignals(prev_block_state)
         self.changed_signal.emit()
 
+    def tf_from_json(self, json_string: str):
+        d = json.loads(json_string)
+        d["points"] = self.scatterseries.json_compatible_list_to_regular_point_list(d["points"])
+
+        prev_block_state = self.signalsBlocked()
+        self.blockSignals(True)
+        for i in reversed(range(self.scatterseries.count())):
+            self.scatterseries.remove(i)
+
+        for idx in range(len(d["points"])):
+            self.scatterseries.append(d["points"][idx]["x"], d["points"][idx]["y"])
+            self.scatterseries.setPointConfiguration(idx, d["points"][idx]["configuration"])
+        self.blockSignals(prev_block_state)
+        self.changed_signal.emit()
+
     def tf_as_json(self) -> str:
         """
         Returns a json representation of this transferfunction.
@@ -172,21 +187,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
         :return:
         """
         j = dict()
-        points = []
-        for idx in range(self.scatterseries.count()):
-            p = self.scatterseries.at(idx)
-            conf = self.scatterseries.get_points_configuration_with_limited_keys(
-                self.scatterseries.get_configuration_for_point_at_idx(idx))
 
-            o = {
-                "x": p.x(),
-                "y": p.y(),
-                "configuration": conf
-            }
-
-            points.append(o)
-
-        j["points"] = points
+        j["points"] = self.scatterseries.as_json_compatible_list()
 
         return json.dumps(j)
 
@@ -337,7 +339,8 @@ class TransferFunctionWidget(InteractiveChartWidget):
             self.line_series.remove(idx)
 
         self.changed_signal.emit()
-        printd("point_removed")
+        # printd("point_removed")
+        print(self.tf_as_json())
 
     @Slot(int, int)
     def points_swapped(self, idx1: int, idx2: int):

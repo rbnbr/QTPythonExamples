@@ -108,6 +108,13 @@ class ConfigurableLineSeries(QLineSeries):
     def get_qt_point_configuration_keys():
         return StaticConfigurableXYSeries.get_qt_point_configuration_keys()
 
+    def as_json_compatible_list(self):
+        return StaticConfigurableXYSeries.as_json_compatible_list(self)
+
+    @staticmethod
+    def json_compatible_list_to_regular_point_list(points: list):
+        return StaticConfigurableXYSeries.json_compatible_list_to_regular_point_list(points)
+
     def get_points_configuration_with_limited_keys(self, conf: dict):
         return StaticConfigurableXYSeries.get_points_configuration_with_limited_keys(self, conf)
 

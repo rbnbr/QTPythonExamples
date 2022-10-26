@@ -109,6 +109,13 @@ class ConfigurableScatterSeries(QScatterSeries):
     def get_points_configuration_with_limited_keys(self, conf: dict):
         return StaticConfigurableXYSeries.get_points_configuration_with_limited_keys(self, conf)
 
+    def as_json_compatible_list(self):
+        return StaticConfigurableXYSeries.as_json_compatible_list(self)
+
+    @staticmethod
+    def json_compatible_list_to_regular_point_list(points: list):
+        return StaticConfigurableXYSeries.json_compatible_list_to_regular_point_list(points)
+
     def update_points_configuration(self, indices=None):
         """
         Updates the configuration of scatterseries with the current points_id_configuration.

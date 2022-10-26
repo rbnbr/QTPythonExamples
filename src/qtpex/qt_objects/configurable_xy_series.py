@@ -1,7 +1,9 @@
+import json
 from typing import Dict, Any
 
 import PySide6
-from PySide6.QtCharts import QScatterSeries
+from PySide6.QtCharts import QScatterSeries, QXYSeries
+from PySide6.QtGui import QColor
 
 
 class StaticConfigurableXYSeries:
@@ -65,6 +67,92 @@ class StaticConfigurableXYSeries:
         self.blockSignals(False)
 
         self.swapped_signal.emit(idx1, idx2)
+
+    @staticmethod
+    def _parse_point_configuration_to_json_comp_dict_(conf: dict):
+        json_conf = dict()
+
+        if QXYSeries.PointConfiguration.Color in conf:
+            c = conf[QXYSeries.PointConfiguration.Color]
+            json_conf["QXYSeries.PointConfiguration.Color"] = c.name(QColor.HexArgb)
+
+        if QXYSeries.PointConfiguration.Size in conf:
+            json_conf["QXYSeries.PointConfiguration.Size"] = conf[QXYSeries.PointConfiguration.Size]
+
+        if QXYSeries.PointConfiguration.Visibility in conf:
+            json_conf["QXYSeries.PointConfiguration.Visibility"] = conf[QXYSeries.PointConfiguration.Visibility]
+
+        if QXYSeries.PointConfiguration.LabelVisibility in conf:
+            json_conf["QXYSeries.PointConfiguration.LabelVisibility"] = conf[QXYSeries.PointConfiguration.LabelVisibility]
+
+        return json_conf
+
+    @staticmethod
+    def as_json_compatible_list(self):
+        """
+        Returns a list of points that can be directly passed to json.dump(s).
+        :return:
+        """
+        points = []
+        for idx in range(self.count()):
+            p = self.at(idx)
+            conf = self.get_points_configuration_with_limited_keys(
+                self.get_configuration_for_point_at_idx(idx))
+
+            o = {
+                "x": p.x(),
+                "y": p.y(),
+                "configuration": StaticConfigurableXYSeries._parse_point_configuration_to_json_comp_dict_(conf)
+            }
+
+            points.append(o)
+
+        try:
+            json.dumps(points)
+        except Exception as e:
+            raise e
+        return points
+
+    @staticmethod
+    def json_compatible_list_to_regular_point_list(points):
+        """
+        Returns a regular list of points that can be directly used to set the configurations
+        :param points:
+        :return:
+        """
+        rp = []
+
+        for p in points:
+            p["configuration"] = StaticConfigurableXYSeries._parse_json_comp_dict_to_point_configuration_(
+                p["configuration"])
+            rp.append(p.copy())
+
+        return rp
+
+    @staticmethod
+    def _parse_json_comp_dict_to_point_configuration_(json_conf):
+        """
+        Constructs the original dict from the conf.
+        :param self:
+        :param points:
+        :return:
+        """
+        conf = dict()
+
+        if "QXYSeries.PointConfiguration.Color" in json_conf:
+            c = json_conf["QXYSeries.PointConfiguration.Color"]
+            conf[QXYSeries.PointConfiguration.Color] = QColor(c)
+
+        if "QXYSeries.PointConfiguration.Size" in json_conf:
+            conf[QXYSeries.PointConfiguration.Size] = json_conf["QXYSeries.PointConfiguration.Size"]
+
+        if "QXYSeries.PointConfiguration.Visibility" in json_conf:
+            conf[QXYSeries.PointConfiguration.Visibility] = json_conf["QXYSeries.PointConfiguration.Visibility"]
+
+        if "QXYSeries.PointConfiguration.LabelVisibility" in json_conf:
+            conf[QXYSeries.PointConfiguration.LabelVisibility] = json_conf["QXYSeries.PointConfiguration.LabelVisibility"]
+
+        return conf
 
     @staticmethod
     def setPointConfiguration(self, index: int,
@@ -164,10 +252,10 @@ class StaticConfigurableXYSeries:
     @staticmethod
     def get_qt_point_configuration_keys():
         return [
-            QScatterSeries.PointConfiguration.Color,
-            QScatterSeries.PointConfiguration.Size,
-            QScatterSeries.PointConfiguration.Visibility,
-            QScatterSeries.PointConfiguration.LabelVisibility
+            QXYSeries.PointConfiguration.Color,
+            QXYSeries.PointConfiguration.Size,
+            QXYSeries.PointConfiguration.Visibility,
+            QXYSeries.PointConfiguration.LabelVisibility
         ]
 
     @staticmethod
