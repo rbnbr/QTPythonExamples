@@ -1,3 +1,5 @@
+import json
+
 import PySide6
 from PySide6.QtCharts import QXYSeries
 from PySide6.QtCore import Slot, QMargins, Qt, Signal
@@ -160,6 +162,33 @@ class TransferFunctionWidget(InteractiveChartWidget):
             self.scatterseries.setPointConfiguration(idx, other.scatterseries.get_configuration_for_point_at_idx(idx))
         self.blockSignals(prev_block_state)
         self.changed_signal.emit()
+
+    def tf_as_json(self) -> str:
+        """
+        Returns a json representation of this transferfunction.
+        The JSON representation only contains the points and the QT compatible configurations:
+            Color, Size, Visibility, LabelVisibility
+            per point.
+        :return:
+        """
+        j = dict()
+        points = []
+        for idx in range(self.scatterseries.count()):
+            p = self.scatterseries.at(idx)
+            conf = self.scatterseries.get_points_configuration_with_limited_keys(
+                self.scatterseries.get_configuration_for_point_at_idx(idx))
+
+            o = {
+                "x": p.x(),
+                "y": p.y(),
+                "configuration": conf
+            }
+
+            points.append(o)
+
+        j["points"] = points
+
+        return json.dumps(j)
 
     def resizeEvent(self, event:PySide6.QtGui.QResizeEvent) -> None:
         super(TransferFunctionWidget, self).resizeEvent(event)

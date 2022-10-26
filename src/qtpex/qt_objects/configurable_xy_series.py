@@ -32,7 +32,7 @@ class StaticConfigurableXYSeries:
         # updates
         self._block_qt_configuration_updates = False
 
-        self._points_id_configuration = {}
+        self._points_id_configuration = dict()
 
     @staticmethod
     def block_qt_configuration_updates(self, block: bool = True):
