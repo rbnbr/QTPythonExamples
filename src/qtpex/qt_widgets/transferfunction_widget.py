@@ -340,7 +340,7 @@ class TransferFunctionWidget(InteractiveChartWidget):
 
         self.changed_signal.emit()
         # printd("point_removed")
-        print(self.tf_as_json())
+        printd(self.tf_as_json())
 
     @Slot(int, int)
     def points_swapped(self, idx1: int, idx2: int):
