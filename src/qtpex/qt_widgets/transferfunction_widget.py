@@ -32,7 +32,7 @@ class InterpolationModes:
 class TransferFunctionWidget(InteractiveChartWidget):
     changed_signal = Signal()  # fired when the something was changed that affects the resulting color map
 
-    def __init__(self, interpolation_mode: Union[Interpolation, str], parent: QWidget = None):
+    def __init__(self, interpolation_mode: Union[Interpolation, str], x_range=None, y_range=None, *, parent: QWidget = None):
         super().__init__(parent=parent)
 
         if str(interpolation_mode) == str(InterpolationModes.LINEAR):
@@ -52,8 +52,11 @@ class TransferFunctionWidget(InteractiveChartWidget):
             self.line_series.attachAxis(self.axis_y)
 
         # x and y range
-        self.x_range = (0, 255)
-        self.y_range = (0, 1)
+        self.x_range = (0, 255) if x_range is None else x_range
+        self.y_range = (0, 1) if y_range is None else y_range
+
+        assert self.x_range[0] < self.x_range[1], "invalid x-range: {}".format(self.x_range)
+        assert self.y_range[0] < self.y_range[1], "invalid y-range: {}".format(self.y_range)
 
         marker_size = 2**3.5
 
@@ -222,15 +225,21 @@ class TransferFunctionWidget(InteractiveChartWidget):
         Returns a list of colors for each value between 0 and 255.
         :return:
         """
-        return [self.get_current_color_for(x) for x in range(256)]
+        return [self.get_current_color_for(x / 255) for x in range(256)]  # x takes 256 from [0, 1]
 
     def get_current_color_for(self, x):
         """
         Returns the current color for x based on the transfer function.
-        :param x:
+        :param x: some values between including [0, 1].
         :return:
         """
         left, right = 0, self.scatterseries.count() - 1
+
+        assert 0 <= x <= 1, "x has to be between 0 and 1, got: {}".format(x)
+
+        # map x to values from x_range
+        x = self.x_range[0] + x * self.x_range[1]
+
         if x <= self.x_range[0]:
             return self.get_point_color_with_idx(left)
         if x >= self.x_range[1]:
